@@ -38,8 +38,9 @@ def update_graph(column):
     graph = dcc.Graph(id='kdd_graph',
         figure={
             'data': [
-                {'x': data.index, 'y': data['attack_type']},
-                {'x': data.index, 'y': data[column]}
+                # {'x': data.index, 'y': data['attack_type'], 'name': 'attack_type'},
+                {'x': data.index, 'y': data[column], 'name': column} for column in names
+                # {'x': data['duration'], 'y': data['attack_type'], 'name': 'duration vs attack_type'}
             ], 
             'layout': {
                 'title': column
@@ -50,4 +51,4 @@ def update_graph(column):
 
 
 if __name__ == '__main__':
-    app.run_server() 
+    app.run_server(debug=True) 
