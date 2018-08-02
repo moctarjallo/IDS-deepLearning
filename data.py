@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from sklearn import preprocessing
+
 class Data:
     def __init__(self, datafile='data/kddcup.data_10_percent_corrected', datalist=None, nrows=None):
         if datalist:
@@ -95,19 +97,31 @@ class Data:
 
 
 class KddCupData(object):
-    def __init__(self, dataframe=None, filename='./data/kddcup.data_10_percent_corrected', batch_size=2):
+    def __init__(self, dataframe=None, filename='./data/kddcup.data_10_percent_corrected', nrows=None, batch_size=128):
         self.batch_size = batch_size
-        self.iter = pd.read_csv(filename, names=self.properties, iterator=True)
+        self.iter = pd.read_csv(filename, names=self.__names, iterator=True, nrows=nrows)
         if dataframe is not None:
             self.current = dataframe
         else:
             self.current = self.iter.get_chunk(self.batch_size)
-        self.__set_objects_to_categorical()
-    
-    def __set_objects_to_categorical(self):
-        objects = ['protocol_type', 'service', 'flag', 'attack_type']
-        for properti in objects:
-            self.current[properti] = self.current[properti].astype('category')
+        self.__set_types('object', 'category')
+
+    @property
+    def __names(self):
+        with open('data/kddcup.names.txt') as names_file:
+            lines = names_file.readlines()[1:]
+            names = [lines[i].split(':')[0] for i in range(len(lines))]
+        names.append('attack_type')
+        return names
+
+    def __get_columns_by_type(self, typ):
+        return list(self.current.select_dtypes(include=[typ]).columns)
+
+    def __set_types(self, from_type, to_type):
+        columns = self.__get_columns_by_type(from_type)
+        if columns:
+            for properti in columns:
+                self.current[properti] = self.current[properti].astype(to_type)
 
     def __iter__(self):
         return self
@@ -118,11 +132,7 @@ class KddCupData(object):
 
     @property
     def properties(self):
-        with open('data/kddcup.names.txt') as names_file:
-            lines = names_file.readlines()[1:]
-            names = [lines[i].split(':')[0] for i in range(len(lines))]
-        names.append('attack_type')
-        return names
+        return list(self.current)
 
     def head(self):
         return self.current.head()
@@ -135,18 +145,36 @@ class KddCupData(object):
 
     @property
     def attack_types(self):
-        return list(self.__next__()['attack_type'])
+        return list(self.current['attack_type'])
 
     @property
     def numerized(self):
         """Transform categorical types to numerical"""
-        pass
+        categories = self.__get_columns_by_type('category')[:-1] # not include the attack_type
+        copy = self.current.copy()
+        for cat in categories:
+            copy[cat] = copy[cat].cat.codes
+        return copy
 
     @property
     def normalized(self):
         """Normalize data between 0 and 1"""
-        pass
+        copy = self.numerized
+        for properti in self.properties[:-1]:
+            x = copy[properti].values.reshape(-1, 1) #returns a numpy array
+            min_max_scaler = preprocessing.MinMaxScaler()
+            x_scaled = min_max_scaler.fit_transform(x)
+            copy[properti] = pd.DataFrame(x_scaled)        
+        return copy
 
+    def binarized(self, target_attack_type='normal.'):
+        """Express the output as a binary vector with respect to the
+        specific attack type"""
+        copy = self.normalized
+        attacks = copy['attack_type'].tolist()
+        attacks = [(1, 0) if attacks[i] == target_attack_type else (0, 1) for i in range(len(attacks))]
+        copy['attack_type'] = pd.Series(attacks)
+        return copy
 
 
 
@@ -156,5 +184,5 @@ if __name__=='__main__':
     # print(data.normal.get(['service'], 5))
     # print(data.malicious.get(['service', 'attack_type'], 5))
     data = KddCupData()
-    print(next(data))
+    data.set_objects_to_categorical()
 
