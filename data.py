@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-import hypertools as hyp
-
 
 class Data:
     def __init__(self, datafile='data/kddcup.data_10_percent_corrected', datalist=None, nrows=None):
@@ -72,8 +70,8 @@ class Data:
     """Return a Data object containing malicious packets"""
     @property
     def malicious(self):
-#         normal = pd.DataFrame(self.normal)
-#         return self.data[~self.data.isin(normal).all(1)].values.tolist()
+        #normal = pd.DataFrame(self.normal)
+        #return self.data[~self.data.isin(normal).all(1)].values.tolist()
         return self.data[self.data['attack_type'] != self.data.iloc[1, -1]].values.tolist()
 
 
@@ -95,8 +93,68 @@ class Data:
         return list(self.data[properti].dtype.categories)
 
 
+
+class KddCupData(object):
+    def __init__(self, dataframe=None, filename='./data/kddcup.data_10_percent_corrected', batch_size=2):
+        self.batch_size = batch_size
+        self.iter = pd.read_csv(filename, names=self.properties, iterator=True)
+        if dataframe is not None:
+            self.current = dataframe
+        else:
+            self.current = self.iter.get_chunk(self.batch_size)
+        self.__set_objects_to_categorical()
+    
+    def __set_objects_to_categorical(self):
+        objects = ['protocol_type', 'service', 'flag', 'attack_type']
+        for properti in objects:
+            self.current[properti] = self.current[properti].astype('category')
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        current = self.iter.get_chunk(self.batch_size)
+        return KddCupData(dataframe=current)
+
+    @property
+    def properties(self):
+        with open('data/kddcup.names.txt') as names_file:
+            lines = names_file.readlines()[1:]
+            names = [lines[i].split(':')[0] for i in range(len(lines))]
+        names.append('attack_type')
+        return names
+
+    def head(self):
+        return self.current.head()
+
+    def __getitem__(self, key):
+        if key in self.attack_types:
+            return self.current[self.current['attack_type'] == key]
+        else:
+            return self.current[key]
+
+    @property
+    def attack_types(self):
+        return list(self.__next__()['attack_type'])
+
+    @property
+    def numerized(self):
+        """Transform categorical types to numerical"""
+        pass
+
+    @property
+    def normalized(self):
+        """Normalize data between 0 and 1"""
+        pass
+
+
+
+
+
 if __name__=='__main__':
-    data = Data()
     # print(data.get(properties=['protocol_type', 'service', 'attack_type'], lines=5))
     # print(data.normal.get(['service'], 5))
-    print(data.malicious.get(['service', 'attack_type'], 5))
+    # print(data.malicious.get(['service', 'attack_type'], 5))
+    data = KddCupData()
+    print(next(data))
+
