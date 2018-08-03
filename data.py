@@ -97,7 +97,8 @@ class Data:
 
 
 class KddCupData(object):
-    def __init__(self, dataframe=None, filename='./data/kddcup.data_10_percent_corrected', nrows=None, batch_size=128):
+    def __init__(self, dataframe=None, filename='./data/kddcup.data_10_percent_corrected', target_attack='normal.', nrows=None, batch_size=1280):
+        self.target_attack = target_attack
         self.batch_size = batch_size
         self.iter = pd.read_csv(filename, names=self.__names, iterator=True, nrows=nrows)
         if dataframe is not None:
@@ -134,12 +135,17 @@ class KddCupData(object):
     def properties(self):
         return list(self.current)
 
+    @property
+    def shape(self):
+        return self.current.shape
+
     def head(self):
         return self.current.head()
 
     def __getitem__(self, key):
         if key in self.attack_types:
-            return self.current[self.current['attack_type'] == key]
+            dataframe = self.current[self.current['attack_type'] == key]
+            return dataframe
         else:
             return self.current[key]
 
@@ -151,10 +157,13 @@ class KddCupData(object):
     def numerized(self):
         """Transform categorical types to numerical"""
         categories = self.__get_columns_by_type('category')[:-1] # not include the attack_type
-        copy = self.current.copy()
-        for cat in categories:
-            copy[cat] = copy[cat].cat.codes
-        return copy
+        if categories:
+            copy = self.current.copy()
+            for cat in categories:
+                copy[cat] = copy[cat].cat.codes
+            return copy
+        else:
+            return self.current
 
     @property
     def normalized(self):
@@ -167,15 +176,24 @@ class KddCupData(object):
             copy[properti] = pd.DataFrame(x_scaled)        
         return copy
 
-    def binarized(self, target_attack_type='normal.'):
+    @property
+    def binarized(self):
         """Express the output as a binary vector with respect to the
-        specific attack type"""
+        specific target attack. Default is 'normal.' """
         copy = self.normalized
         attacks = copy['attack_type'].tolist()
-        attacks = [(1, 0) if attacks[i] == target_attack_type else (0, 1) for i in range(len(attacks))]
+        attacks = [[1, 0] if attacks[i] == self.target_attack else [0, 1] for i in range(len(attacks))]
         copy['attack_type'] = pd.Series(attacks)
         return copy
 
+    @property
+    def X(self):
+        return self.binarized[self.properties[:-1]]
+
+    @property
+    def Y(self):
+        return np.array(self.binarized[self.properties[-1]].tolist())
+         
 
 
 

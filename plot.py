@@ -1,54 +1,50 @@
-import dash 
-import dash_core_components as dcc 
-import dash_html_components as html 
 
-from dash.dependencies import Input, Output
+import dash
+from dash.dependencies import Output, Event
+import dash_core_components as dcc
+import dash_html_components as html
+import plotly
+import random
+import plotly.graph_objs as go
+from collections import deque
 
-import pandas as pd
+from data import KddCupData
+df = KddCupData()
 
-# Load the names of columns
-
-
-# Load the data
-# print(len(data))
-# print(data.src_bytes)
-
-with open('data/kddcup.names.txt', 'r') as names_file:
-        lines = names_file.readlines()[1:]
-        names = [lines[i].split(':')[0] for i in range(len(lines))]
-        names.append('attack_type')
+X = deque(maxlen=20)
+X.append(1)
+Y = deque(maxlen=20)
+Y.append(1)
 
 
-
-app = dash.Dash()
-
-app.layout = html.Div(children=[
-    html.H2("Visualizing Data"),
-    dcc.Input(id='kdd_input', type='text', value=''),
-    html.Div(id='kdd_graph'),
-])
-
-@app.callback(
-    Output(component_id='kdd_graph', component_property='children'),
-    [Input(component_id='kdd_input', component_property='value')]
+app = dash.Dash(__name__)
+app.layout = html.Div(
+    [
+        dcc.Graph(id='live-graph', animate=True),
+        dcc.Interval(
+            id='graph-update',
+            interval=1*1000
+        ),
+    ]
 )
-def update_graph(column):
-    data = pd.read_csv("data/kddcup.data_10_percent_corrected", names=names, nrows=20000)
 
-    graph = dcc.Graph(id='kdd_graph',
-        figure={
-            'data': [
-                # {'x': data.index, 'y': data['attack_type'], 'name': 'attack_type'},
-                {'x': data.index, 'y': data[column], 'name': column} for column in names
-                # {'x': data['duration'], 'y': data['attack_type'], 'name': 'duration vs attack_type'}
-            ], 
-            'layout': {
-                'title': column
-            }
-    })
+@app.callback(Output('live-graph', 'figure'),
+              events=[Event('graph-update', 'interval')])
+def update_graph_scatter():
+    X.append(X[-1]+1)
+    Y.append(df['dst_bytes'][X[-1]])
 
-    return graph
+    data = plotly.graph_objs.Scatter(
+            x=list(X),
+            y=list(Y),
+            name='Scatter',
+            mode= 'lines+markers'
+            )
+
+    return {'data': [data],'layout' : go.Layout(xaxis=dict(range=[min(X),max(X)]),
+                                                yaxis=dict(range=[min(Y),max(Y)]),)}
+
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True) 
+    app.run_server(debug=True)
