@@ -1,139 +1,33 @@
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import normalize
 
 from sklearn import preprocessing
 
 class Data:
-    def __init__(self, datafile='data/kddcup.data_10_percent_corrected', datalist=None, nrows=None):
-        if datalist:
-            self.data = pd.Dataframe(datalist)
-        elif datafile:
-            self.data = pd.read_csv(datafile, names=self.properties, nrows=nrows)
-            self.set_types(['protocol_type', 'service', 'flag', 'attack_type'], 4*['category'])
-
-    """Size of this dataset"""
-    @property
-    def size(self):
-        return len(self.data)
-
-    """List of packet properties read from a file"""
-    @property
-    def properties(self):
-        with open('data/kddcup.names.txt') as names_file:
-            lines = names_file.readlines()[1:]
-            names = [lines[i].split(':')[0] for i in range(len(lines))]
-        names.append('attack_type')
-        return names
-
-    """Return a Data object containing specified list of properties"""
-    def get(self, properties=['all'], lines='all', attack_type=None):
-        if attack_type:
-            data = self.data[self.data['attack_type'] == attack_type]
-        else:
-            data = self.data
-        if properties == ['all'] and lines == 'all':
-            pass
-        elif properties == ['all']:
-            try:
-                data = data[:lines]
-            except ValueError:
-                print("wrong argument lines")
-        elif lines == 'all':
-            try:
-                data = data[properties]
-            except ValueError:
-                print("wrong argument properties: must be list of existing properties")
-        else:
-            try:
-                data = data[properties][:lines]
-            except ValueError:
-                print("wrong argument lines")
-        return data.values.tolist()
-
-
-    """Update a specified property using a list of function updaters"""
-    def update(self, properties, updaters):
-        for property, updater in zip(properties, updaters):
-            self.data[property] = self.data[property].apply(updater)
-
-    """Get the type of each property listed in properties"""
-    def get_types(self, properties):
-        return self.data[properties].dtypes
-
-    """Set the type of listed properties to the listed types"""
-    def set_types(self, properties, types):
-        for properti, typ in zip(properties, types):
-            self.data[properti] = self.data[properti].astype(typ)
-            
-    def set_cat_to_num(self, properties):
-        for properti in properties:
-            self.data[properti] = self.data[properti].cat.codes
-
-    """Return a Data object containing malicious packets"""
-    @property
-    def malicious(self):
-        #normal = pd.DataFrame(self.normal)
-        #return self.data[~self.data.isin(normal).all(1)].values.tolist()
-        return self.data[self.data['attack_type'] != self.data.iloc[1, -1]].values.tolist()
-
-
-    """Return a Data object containing normal packets"""
-    @property
-    def normal(self):
-        return self.data[self.data['attack_type'] == self.data.iloc[1, -1]].values.tolist()
-
-
-    @property
-    def attack_categories(self):
-        return self.categories('attack_type')
-
-    def plot(self, properties=['all'], labels=None, ndims=None, nsamples=None):
-        hyp.plot(self.get(properties, lines=nsamples), labels=labels, ndims=ndims)
-
-    def get_categories(self, properti):
-        assert type(properti) == str, "properti input must be a string"
-        return list(self.data[properti].dtype.categories)
-
-
-
-class KddCupData(object):
-    def __init__(self, dataframe=None, filename='./data/kddcup.data_10_percent_corrected', target_attack='normal.', nrows=None, batch_size=1280):
-        self.target_attack = target_attack
-        self.batch_size = batch_size
-        self.iter = pd.read_csv(filename, names=self.__names, iterator=True, nrows=nrows)
-        if dataframe is not None:
-            self.current = dataframe
-        else:
-            self.current = self.iter.get_chunk(self.batch_size)
+    def __init__(self, dataframe):
+        self.current = dataframe
         self.__set_types('object', 'category')
-
-    @property
-    def __names(self):
-        with open('data/kddcup.names.txt') as names_file:
-            lines = names_file.readlines()[1:]
-            names = [lines[i].split(':')[0] for i in range(len(lines))]
-        names.append('attack_type')
-        return names
 
     def __get_columns_by_type(self, typ):
         return list(self.current.select_dtypes(include=[typ]).columns)
 
-    def __set_types(self, from_type, to_type):
-        columns = self.__get_columns_by_type(from_type)
+    def __set_types(self, from_type='object', to_type='category', column=None):
+        if column:
+            columns = [column]
+        else:
+            columns = self.__get_columns_by_type(from_type)
         if columns:
             for properti in columns:
                 self.current[properti] = self.current[properti].astype(to_type)
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        current = self.iter.get_chunk(self.batch_size)
-        return KddCupData(dataframe=current)
-
     @property
     def properties(self):
         return list(self.current)
+
+    @property
+    def attack_types(self):
+        return list(self.current['attack_type'])
 
     @property
     def shape(self):
@@ -142,16 +36,29 @@ class KddCupData(object):
     def head(self):
         return self.current.head()
 
-    def __getitem__(self, key):
-        if key in self.attack_types:
-            dataframe = self.current[self.current['attack_type'] == key]
-            return dataframe
+    def __getitem__(self, keys):
+        # keys is a list containing properties and/or attack types
+        attack_keys = list(set(self.attack_types).intersection(set(keys)))
+        property_keys = list(set(self.properties).intersection(set(keys)))
+        if not property_keys: # if a property is not provided, consider all properties
+            property_keys = self.properties
         else:
-            return self.current[key]
+            property_keys += ['attack_type']
+        if not attack_keys: # if an attack_key is not provided, consider all of them
+            return Data(self.current[property_keys])
+        elif 'other.' in keys: # if key word 'other' is provided, consider it as an attack type that replaces all other attack types that were not provided
+                updated = self.current['attack_type'].tolist()
+                for i in range(len(updated)):
+                    if updated[i] not in attack_keys:
+                        updated[i] = 'other.'
+                self.current['attack_type'] = updated
+                attack_keys += ['other.']
+        c = False # make a selection condition
+        for attack_key in attack_keys:
+            c = c | (self.current['attack_type'] == attack_key)
+            
+        return Data(self.current[property_keys][c])
 
-    @property
-    def attack_types(self):
-        return list(self.current['attack_type'])
 
     @property
     def numerized(self):
@@ -161,46 +68,67 @@ class KddCupData(object):
             copy = self.current.copy()
             for cat in categories:
                 copy[cat] = copy[cat].cat.codes
-            return copy
+            return Data(copy)
         else:
-            return self.current
+            return Data(self.current)
 
     @property
     def normalized(self):
         """Normalize data between 0 and 1"""
-        copy = self.numerized
-        for properti in self.properties[:-1]:
-            x = copy[properti].values.reshape(-1, 1) #returns a numpy array
-            min_max_scaler = preprocessing.MinMaxScaler()
-            x_scaled = min_max_scaler.fit_transform(x)
-            copy[properti] = pd.DataFrame(x_scaled)        
-        return copy
+        df = self.numerized.XY
+        df_values = df[self.properties[:-1]].values
+        norm = normalize(df_values, axis=0, copy=False)
+        df[self.properties[:-1]] = norm
+        return Data(df)
 
     @property
     def binarized(self):
         """Express the output as a binary vector with respect to the
         specific target attack. Default is 'normal.' """
-        copy = self.normalized
-        attacks = copy['attack_type'].tolist()
-        attacks = [[1, 0] if attacks[i] == self.target_attack else [0, 1] for i in range(len(attacks))]
-        copy['attack_type'] = pd.Series(attacks)
-        return copy
+        copy = self.normalized.XY
+        bins = copy['attack_type'].str.get_dummies().values
+        copy['attack_type'] = [tuple(b) for b in bins]
+        return Data(copy) 
+
+    @property
+    def XY(self):
+        return self.current
 
     @property
     def X(self):
-        return self.binarized[self.properties[:-1]]
+        return self.XY[self.properties[:-1]]
 
     @property
     def Y(self):
-        return np.array(self.binarized[self.properties[-1]].tolist())
+        return np.array(self.XY[self.properties[-1]].tolist())
+
+class KddCupData(object):
+    def __init__(self, filename='./data/kddcup.data_10_percent_corrected', batch_size=10000):
+        self.batch_size = batch_size
+        self.data = pd.read_csv(filename, names=self.__names, iterator=True)
+        
+    @property
+    def __names(self):
+        with open('data/kddcup.names.txt') as names_file:
+            lines = names_file.readlines()[1:]
+            names = [lines[i].split(':')[0] for i in range(len(lines))]
+        names.append('attack_type')
+        return names
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        current = self.data.get_chunk(self.batch_size)
+        self.shape = current.shape
+        return Data(current)
+
+
          
 
 
 
 if __name__=='__main__':
-    # print(data.get(properties=['protocol_type', 'service', 'attack_type'], lines=5))
-    # print(data.normal.get(['service'], 5))
-    # print(data.malicious.get(['service', 'attack_type'], 5))
     data = KddCupData()
-    data.set_objects_to_categorical()
+
 
