@@ -9,7 +9,7 @@ import plotly.graph_objs as go
 from collections import deque
 
 from data import KddCupData
-df = KddCupData()
+df = next(KddCupData(batch_size=1000))
 
 X = deque(maxlen=20)
 X.append(1)
@@ -32,16 +32,17 @@ app.layout = html.Div(
               events=[Event('graph-update', 'interval')])
 def update_graph_scatter():
     X.append(X[-1]+1)
-    Y.append(df['dst_bytes'][X[-1]])
+    y = df[['dst_bytes']].X
+    Y.append(y.loc[X[-1]][0])
 
-    data = plotly.graph_objs.Scatter(
+    data = [plotly.graph_objs.Scatter(
             x=list(X),
             y=list(Y),
             name='Scatter',
             mode= 'lines+markers'
-            )
+            )]
 
-    return {'data': [data],'layout' : go.Layout(xaxis=dict(range=[min(X),max(X)]),
+    return {'data': data,'layout' : go.Layout(xaxis=dict(range=[min(X),max(X)]),
                                                 yaxis=dict(range=[min(Y),max(Y)]),)}
 
 
