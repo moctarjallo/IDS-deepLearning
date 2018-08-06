@@ -33,6 +33,14 @@ class Data:
     def shape(self):
         return self.current.shape
 
+    @property
+    def input_dim(self):
+        return self.shape[1] - 1 # not include the output dim
+
+    @property
+    def output_dim(self):
+        return len(set(self.attack_types))
+
     def head(self):
         return self.current.head()
 
@@ -92,21 +100,24 @@ class Data:
 
     @property
     def XY(self):
+        """Return the whole dataframe"""
         return self.current
 
     @property
     def X(self):
+        """Return inputs"""
         return self.XY[self.properties[:-1]]
 
     @property
     def Y(self):
+        """Return the output"""
         return np.array(self.XY[self.properties[-1]].tolist())
 
 class KddCupData(object):
     def __init__(self, filename='./data/kddcup.data_10_percent_corrected', batch_size=10000):
         self.batch_size = batch_size
         self.data = pd.read_csv(filename, names=self.__names, iterator=True)
-        
+    
     @property
     def __names(self):
         with open('data/kddcup.names.txt') as names_file:
@@ -114,6 +125,10 @@ class KddCupData(object):
             names = [lines[i].split(':')[0] for i in range(len(lines))]
         names.append('attack_type')
         return names
+
+    @property
+    def properties(self):
+        return self.__names
 
     def __iter__(self):
         return self
