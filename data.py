@@ -33,14 +33,6 @@ class Data:
     def shape(self):
         return self.current.shape
 
-    @property
-    def input_dim(self):
-        return self.shape[1] - 1 # not include the output dim
-
-    @property
-    def output_dim(self):
-        return len(set(self.attack_types))
-
     def head(self):
         return self.current.head()
 
