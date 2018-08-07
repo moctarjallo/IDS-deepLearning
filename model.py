@@ -5,8 +5,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint
 import numpy as np
 
 
-class KddCupModel(object):
-    pass
+# class KddCupModel(object):
 #     def __init__(self, inputs=[], targets=['normal.', 'other.'], layers=[]):
 #         self.callbacks = [TensorBoard(log_dir='../logs/tensorboard/15'), ModelCheckpoint(filepath='../logs/models/model-last.h5')]
 #         self.inputs = inputs
@@ -42,38 +41,80 @@ class KddCupModel(object):
 
 
 class Model(object):
-    def __init__(self, data, layers=[], model_path=None):
+    def __init__(self, data, layers=[], model=None, model_path=None):
         """
 
         data: object of type data.Data
         layers: a list of dicts, each representing a layer
         """
-        self.data = data
-        if not model_path:
-            self.model = self.__build_model(layers)
-        else:
+        self.data = data.binarized
+        if model:
+            self.model = model
+        elif model_path:
             self.model = load_model(model_path)
+        else:
+            self.model = self.__build_model(layers)
+
+    @property
+    def input_dim(self):
+        return self.data.shape[1] - 1 # not include the output dim
+
+    @property
+    def output_dim(self):
+        return len(set(self.data.attack_types))
 
     def __build_model(self, layers):
         # layers = [{'neurons': neurons, 'activation': activation, ...}, 
                   # {'neurons': neurons, 'activation': activation, ...},
                   #  ... ]
         model = Sequential()
-        model.add(Dense(layers[0]['neurons'], input_shape=(self.data.input_dim,), activation=layers[0]['activation']))
+        model.add(Dense(layers[0]['neurons'], input_shape=(self.input_dim,), activation=layers[0]['activation']))
         for layer in layers[1:]:
             model.add(Dense(layer['neurons'], activation=layer['activation']))
-        model.add(Dense(self.data.output_dim, activation='softmax'))
+        model.add(Dense(self.output_dim, activation='softmax'))
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
         return model
 
     def train(self, epochs=10, verbose=1):
-        data = self.data.binarized
-        self.model.fit(data.X, data.Y, batch_size=128, epochs=epochs, verbose=verbose)
+        self.model.fit(self.data.X, self.data.Y, batch_size=128, epochs=epochs, verbose=verbose)
 
-    def test(self, data):
-        data = data.binarized
+    def test(self, data=None):
+        if data:
+            data = data.binarized
+        else:
+            data = self.data
         loss, acc = self.model.evaluate(data.X, data.Y)
         return loss, acc
 
+    def get_weights(self):
+        return self.model.get_weights()
+
+    def set_weights(self, weights):
+        self.model.set_weights(weights)
+
+    def train_then(self, epochs=10, verbose=0):
+        self.train(epochs=epochs, verbose=verbose)
+        return self
+
     def save(self, path):
         self.model.save(path)
+
+    
+class KddCupModel(object):
+    def __init__(self, data):
+        """
+
+        data: object of type data.KddCupData
+        """
+        self.data = data
+    
+    def train(self, inputs=[], targets=[], layers=[]):
+        for d in self.data:
+            mdl = Model(d[inputs][targets], layers=layers)
+            if mdl.output_dim == len(targets):
+                mdl.train()
+            else:
+                print('Skipping..')
+
+    def test(self, data):
+        pass
