@@ -80,14 +80,17 @@ class Model(object):
 
     
 class KddCupModel(object):
-    def __init__(self, data=None, model=None, model_path=None):
+    def __init__(self, inputs=[], targets=[], layers=[], model=None, model_path=None):
         """
 
         data: object of type data.KddCupData
         model: object of type model.Model
         """
-        if data:
-            self.data = data
+        # if data:
+        #     self.data = data
+        self.inputs = inputs
+        self.targets = targets
+        self.layers = layers
         if model_path:
             self.model = Model(model_path=model_path)
         else:
@@ -101,22 +104,17 @@ class KddCupModel(object):
         keys = list(*args)
         return [self.__dict__[key] for key in keys]
     
-    def train(self, inputs=[], targets=[], layers=[], batch_size=128, epochs=5, verbose=1):
-        for d in self.data:
-            self.model = Model(d[inputs][targets], layers=layers, model=self.model)
-            if self.model.output_dim == len(targets):
+    def train(self, data, batch_size=128, epochs=5, verbose=1):
+        for d in data:
+            self.model = Model(d[self.inputs][self.targets], layers=self.layers, model=self.model)
+            if self.model.output_dim == len(self.targets):
                 self.model.train(batch_size=batch_size, epochs=epochs, verbose=verbose)
             else:
                 print("Skipping..")
-        self.model.inputs, self.model.targets = inputs, targets
         return self
 
-    def test(self, data=None, inputs=[], targets=[]):
-        if not data:
-            data = self.data
-        if not inputs and not targets:
-            inputs, targets = self.model.inputs, self.model.targets
-        l_a = [self.model.test(d[inputs][targets])['loss', 'accuracy'] for d in data]
+    def test(self, data):
+        l_a = [self.model.test(d[self.inputs][self.targets])['loss', 'accuracy'] for d in data]
         l_a = np.array(l_a)
         # loss, acc = l_a[-1] #np.array(l_a).mean(axis=0)
         loss, acc = l_a[:, 0].tolist(), l_a[:, 1].tolist()
