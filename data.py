@@ -113,9 +113,9 @@ class Data:
         return np.array(self.XY[self.properties[-1]].tolist())
 
 class KddCupData(object):
-    def __init__(self, filename='./data/kddcup.data_10_percent_corrected', nrows=None, batch=10000):
-        if nrows and nrows < batch:
-            nrows = batch
+    def __init__(self, filename='./data/kddcup.data_10_percent_corrected', nrows=None, batch=None):
+        if not batch:
+            batch = nrows
         self.batch = batch
         self.data = pd.read_csv(filename, names=self.__names, nrows=nrows, iterator=True)
     

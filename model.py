@@ -8,7 +8,7 @@ import os
 
 
 class Model(object):
-    def __init__(self, data, layers=[], model=None, model_path=None):
+    def __init__(self, data=None, layers=[], model=None, model_path=None):
         """
 
         data: object of type data.Data
@@ -16,7 +16,8 @@ class Model(object):
         model: object of type of model.Model
         model_path: filepath where a keras model is saved
         """
-        self.data = data.binarized
+        if data:
+            self.data = data.binarized
         if model:
             self.model = model.model
         elif model_path:
@@ -25,8 +26,8 @@ class Model(object):
             self.model = self.__build_model(layers)
         self.inputs = []
         self.targets = []
-        self.loss = None
-        self.accuracy = None
+        self.loss = -1
+        self.accuracy = -2
 
 
     def __getitem__(self, *args):
@@ -69,7 +70,7 @@ class Model(object):
 
     def save(self, path):
         loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
-        to_file = 'kddcup-model-loss{}-acc-{}'.format(loss, acc)
+        to_file = 'kddcupmodel-loss{}-acc{}.h5'.format(loss, acc)
         self.model.save(os.path.join(path, to_file))
         return self
 
@@ -79,14 +80,18 @@ class Model(object):
 
     
 class KddCupModel(object):
-    def __init__(self, data, model=None):
+    def __init__(self, data=None, model=None, model_path=None):
         """
 
         data: object of type data.KddCupData
         model: object of type model.Model
         """
-        self.data = data
-        self.model = model
+        if data:
+            self.data = data
+        if model_path:
+            self.model = Model(model_path=model_path)
+        else:
+            self.model = model
         self.loss = -1
         self.accuracy = -2
 
@@ -106,12 +111,21 @@ class KddCupModel(object):
         self.model.inputs, self.model.targets = inputs, targets
         return self
 
-    def test(self, data=None):
+    def test(self, data=None, inputs=[], targets=[]):
         if not data:
             data = self.data
-        inputs, targets = self.model.inputs, self.model.targets
+        if not inputs and not targets:
+            inputs, targets = self.model.inputs, self.model.targets
         l_a = [self.model.test(d[inputs][targets])['loss', 'accuracy'] for d in data]
         loss, acc = np.array(l_a).mean(axis=0)
         self.loss = loss
         self.accuracy = acc
+        return self
+
+    def save(self, path):
+        self.model.save(path)
+        return self
+
+    def load(self, path):
+        self.model.load(path)
         return self
