@@ -9,6 +9,9 @@ class Data:
         self.current = dataframe
         self.__set_types('object', 'category')
 
+        self.inputs = None #self.properties[:-1]
+        self.targets = None #list(set(self.attack_types))
+
     def __get_columns_by_type(self, typ):
         return list(self.current.select_dtypes(include=[typ]).columns)
 
@@ -33,13 +36,17 @@ class Data:
     def shape(self):
         return self.current.shape
 
-    def head(self):
-        return self.current.head()
+    def head(self, n=5):
+        return self.current.head(n)
 
     def __getitem__(self, keys):
         # keys is a list containing properties and/or attack types
         attack_keys = list(set(self.attack_types).intersection(set(keys)))
         property_keys = list(set(self.properties).intersection(set(keys)))
+
+        self.inputs = property_keys
+        self.targets = attack_keys
+
         if not property_keys: # if a property is not provided, consider all properties
             property_keys = self.properties
         else:
@@ -56,7 +63,7 @@ class Data:
         c = False # make a selection condition
         for attack_key in attack_keys:
             c = c | (self.current['attack_type'] == attack_key)
-            
+   
         return Data(self.current[property_keys][c])
 
 
@@ -106,9 +113,11 @@ class Data:
         return np.array(self.XY[self.properties[-1]].tolist())
 
 class KddCupData(object):
-    def __init__(self, filename='./data/kddcup.data_10_percent_corrected', batch_size=10000):
-        self.batch_size = batch_size
-        self.data = pd.read_csv(filename, names=self.__names, iterator=True)
+    def __init__(self, filename='./data/kddcup.data_10_percent_corrected', nrows=None, batch=10000):
+        if nrows and nrows < batch:
+            nrows = batch
+        self.batch = batch
+        self.data = pd.read_csv(filename, names=self.__names, nrows=nrows, iterator=True)
     
     @property
     def __names(self):
@@ -126,7 +135,7 @@ class KddCupData(object):
         return self
 
     def __next__(self):
-        current = self.data.get_chunk(self.batch_size)
+        current = self.data.get_chunk(self.batch)
         self.shape = current.shape
         return Data(current)
 

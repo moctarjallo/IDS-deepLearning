@@ -4,40 +4,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint
 
 import numpy as np
 
-
-# class KddCupModel(object):
-#     def __init__(self, inputs=[], targets=['normal.', 'other.'], layers=[]):
-#         self.callbacks = [TensorBoard(log_dir='../logs/tensorboard/15'), ModelCheckpoint(filepath='../logs/models/model-last.h5')]
-#         self.inputs = inputs
-#         self.targets = targets
-#         self.layers = layers
-#         if inputs:
-#             input_dim = np.array(inputs).shape[0]
-#         else:
-#             input_dim = 41
-#         self.model = self.__build_model(input_dim)
-
-#     def __build_model(self, input_dim):
-#         # layers = [{'neurons': neurons, 'activation': activation, ...}, 
-#                   # {'neurons': neurons, 'activation': activation, ...},
-#                   #  ... ]
-#         output_shape = np.array(self.targets).shape
-#         model = Sequential()
-#         model.add(Dense(self.layers[0]['neurons'], input_shape=(input_dim,), activation=self.layers[0]['activation']))
-#         for layer in self.layers[1:]:
-#             model.add(Dense(layer['neurons'], activation=layer['activation']))
-#         model.add(Dense(output_shape[0], activation='softmax'))
-#         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-#         return model
-
-#     def train(self, data, batch_size=128, epochs=10, verbose=1):
-#         d = next(data)[self.inputs + self.targets].binarized
-#         self.model.fit(x=d.X, y=d.Y, batch_size=batch_size, epochs=10, verbose=verbose)
-
-#     def test(self, data, verbose=1):
-#         d = next(data)[self.inputs + self.targets].binarized
-#         loss, acc = self.model.evaluate(x=d.X, y=d.Y, verbose=verbose)
-#         return round(loss, 4), round(acc, 4)
+import os
 
 
 class Model(object):
@@ -46,14 +13,27 @@ class Model(object):
 
         data: object of type data.Data
         layers: a list of dicts, each representing a layer
+        model: object of type of model.Model
+        model_path: filepath where a keras model is saved
         """
         self.data = data.binarized
         if model:
-            self.model = model
+            self.model = model.model
         elif model_path:
             self.model = load_model(model_path)
         else:
             self.model = self.__build_model(layers)
+        self.inputs = []
+        self.targets = []
+        self.loss = None
+        self.accuracy = None
+
+
+    def __getitem__(self, *args):
+        if isinstance(*args, str):
+            return self.__dict__[str(*args)]
+        keys = list(*args)
+        return [self.__dict__[key] for key in keys]
 
     @property
     def input_dim(self):
@@ -75,46 +55,63 @@ class Model(object):
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
         return model
 
-    def train(self, epochs=10, verbose=1):
-        self.model.fit(self.data.X, self.data.Y, batch_size=128, epochs=epochs, verbose=verbose)
+    def train(self, batch_size=128, epochs=10, verbose=1):
+        self.model.fit(self.data.X, self.data.Y, batch_size=batch_size, epochs=epochs, verbose=verbose)
+        return self
 
     def test(self, data=None):
         if data:
             data = data.binarized
         else:
             data = self.data
-        loss, acc = self.model.evaluate(data.X, data.Y)
-        return loss, acc
-
-    def get_weights(self):
-        return self.model.get_weights()
-
-    def set_weights(self, weights):
-        self.model.set_weights(weights)
-
-    def train_then(self, epochs=10, verbose=0):
-        self.train(epochs=epochs, verbose=verbose)
+        self.loss, self.accuracy = self.model.evaluate(data.X, data.Y)
         return self
 
     def save(self, path):
-        self.model.save(path)
+        loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
+        to_file = 'kddcup-model-loss{}-acc-{}'.format(loss, acc)
+        self.model.save(os.path.join(path, to_file))
+        return self
+
+    def load(self, path):
+        self.model = load_model(path)
+        return self
 
     
 class KddCupModel(object):
-    def __init__(self, data):
+    def __init__(self, data, model=None):
         """
 
         data: object of type data.KddCupData
+        model: object of type model.Model
         """
         self.data = data
-    
-    def train(self, inputs=[], targets=[], layers=[]):
-        for d in self.data:
-            mdl = Model(d[inputs][targets], layers=layers)
-            if mdl.output_dim == len(targets):
-                mdl.train()
-            else:
-                print('Skipping..')
+        self.model = model
+        self.loss = -1
+        self.accuracy = -2
 
-    def test(self, data):
-        pass
+    def __getitem__(self, *args):
+        if isinstance(*args, str):
+            return self.__dict__[str(*args)]
+        keys = list(*args)
+        return [self.__dict__[key] for key in keys]
+    
+    def train(self, inputs=[], targets=[], layers=[], batch_size=128, epochs=5, verbose=1):
+        for d in self.data:
+            self.model = Model(d[inputs][targets], layers=layers, model=self.model)
+            if self.model.output_dim == len(targets):
+                self.model.train(batch_size=batch_size, epochs=epochs, verbose=verbose)
+            else:
+                print("Skipping..")
+        self.model.inputs, self.model.targets = inputs, targets
+        return self
+
+    def test(self, data=None):
+        if not data:
+            data = self.data
+        inputs, targets = self.model.inputs, self.model.targets
+        l_a = [self.model.test(d[inputs][targets])['loss', 'accuracy'] for d in data]
+        loss, acc = np.array(l_a).mean(axis=0)
+        self.loss = loss
+        self.accuracy = acc
+        return self
