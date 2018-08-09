@@ -4,6 +4,8 @@ from keras.callbacks import TensorBoard, ModelCheckpoint
 
 import numpy as np
 
+import hickle as hkl 
+
 import os
 
 
@@ -13,15 +15,15 @@ class Model(object):
 
         data: object of type data.Data
         layers: a list of dicts, each representing a layer
-        model: object of type of model.Model
+        model: object of type of keras.models.Sequential
         model_path: filepath where a keras model is saved
         """
         if data:
             self.data = data.binarized
         if model:
-            self.model = model.model
+            self.model = model
         elif model_path:
-            self.model = load_model(model_path)
+            self = self.load(model_path)
         else:
             self.model = self.__build_model(layers)
         self.inputs = []
@@ -70,13 +72,20 @@ class Model(object):
 
     def save(self, path):
         loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
-        to_file = 'kddcupmodel-acc{}.h5'.format(acc)
-        self.model.save(os.path.join(path, to_file))
+        to_file = 'model-acc{}.kdd'.format(acc)
+        print(self.model.get_config())
+        data = {'keras_model_config': self.model.get_config(), 'inputs': self.inputs, 'targets': self.targets}
+        # self.model.save(os.path.join(path, to_file))
+        hkl.dump(data, os.path.join(path, to_file), mode='w')
         return self
 
     def load(self, path):
-        self.model = load_model(path)
-        return self
+        data = hkl.load(path)
+        k_model = Sequential.from_config(data['keras_model_config'])
+        model = Model(model=k_model)
+        model.inputs = data['inputs']
+        model.targets = data['targets']
+        return model
 
     
 class KddCupModel(object):
@@ -88,13 +97,19 @@ class KddCupModel(object):
         """
         # if data:
         #     self.data = data
-        self.inputs = inputs
-        self.targets = targets
         self.layers = layers
         if model_path:
             self.model = Model(model_path=model_path)
-        else:
+            self.inputs = self.model.inputs
+            self.targets = self.model.targets
+        elif model:
+            model.inputs = inputs
+            model.targets = targets
             self.model = model
+        else:
+            self.model = None
+            self.inputs = inputs
+            self.targets = targets
         self.loss = -1
         self.accuracy = -2
 
@@ -116,7 +131,6 @@ class KddCupModel(object):
     def test(self, data):
         l_a = [self.model.test(d[self.inputs][self.targets])['loss', 'accuracy'] for d in data]
         l_a = np.array(l_a)
-        # loss, acc = l_a[-1] #np.array(l_a).mean(axis=0)
         loss, acc = l_a[:, 0].tolist(), l_a[:, 1].tolist()
         if len(loss) == 1 and len(acc) == 1:
             loss = loss[0]

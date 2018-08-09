@@ -1,7 +1,4 @@
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import normalize
-
+from backend import np, pd, normalize
 
 class Data:
     def __init__(self, dataframe):

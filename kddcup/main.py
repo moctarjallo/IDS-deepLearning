@@ -10,9 +10,14 @@ targets = ['normal.', 'other.']
 
 
 if __name__ == '__main__':
-    loss, acc = KddCupModel(KddCupData(filename=train_datafile, nrows=50000, batch=10000))\
-                    .train(inputs=inputs, targets=targets, layers=layers, epochs=3)\
-                    .test(KddCupData(filename=test_datafile, nrows=10000, batch=4000), inputs=inputs, targets=targets)\
+    # loss, acc = KddCupModel(inputs=inputs, targets=targets, layers=layers)\
+    #                 .train(KddCupData(filename=train_datafile, nrows=50000), epochs=3)\
+    #                 .test(KddCupData(filename=test_datafile, nrows=10000))\
+    #                 .save('data/ckpts')\
+    #                 ['loss', 'accuracy']
+
+    loss, acc = KddCupModel(model_path='data/ckpts/kddcupmodel-acc97.33.hkl')\
+                    .test(KddCupData(filename=test_datafile, nrows=10000))\
                     ['loss', 'accuracy']
     print(loss)
     print(acc)
