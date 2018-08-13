@@ -11,9 +11,9 @@ targets = ['normal.', 'other.']
 
 if __name__ == '__main__':
     loss, acc = KddCupModel(inputs=inputs, targets=targets)\
-                    .train(KddCupData(training_file, nrows=100000), epochs=3)\
+                    .train(KddCupData(training_file, nrows=100000, batch=10000), epochs=3)\
                     .test(KddCupData(testing_file, nrows=10000))\
-                    .save('kddcup/data/ckpts')\
+                    .save('/home/mctrjalloh/.kddcup/ckpts')\
                     .print()\
                     ['loss', 'accuracy']
 

@@ -4,8 +4,6 @@ from keras.callbacks import TensorBoard, ModelCheckpoint
 
 import numpy as np
 
-import hickle as hkl 
-
 import os
 
 
