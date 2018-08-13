@@ -90,7 +90,7 @@ class Population(list):
         return self.__re_evaluation()
 
 
-    def evolve(self, train_env=None, test_env=None, NGEN=50):
+    def evolve(self, train_env=None, test_env=None, NGEN=2):
         if NGEN == 0:
             return self 
         print("\nGENERATION ", NGEN, '\n')
