@@ -87,6 +87,8 @@ class KddCupModel(object):
         self.targets = sorted(targets)
         self.layers = layers
         self.model = model
+        if model_path:
+            self = self.load(model_path)
         self.loss = -1
         self.accuracy = -2
 
