@@ -21,7 +21,7 @@ class Model(object):
         if data:
             self.data = data.binarized
         if model:
-            self.model = model
+            self.model = model.model
         elif model_path:
             self = self.load(model_path)
         else:
@@ -72,31 +72,30 @@ class Model(object):
 
     def save(self, path):
         loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
-        to_file = 'model-acc{}.kdd'.format(acc)
-        print(self.model.get_config())
-        data = {'keras_model_config': self.model.get_config(), 'inputs': self.inputs, 'targets': self.targets}
-        # self.model.save(os.path.join(path, to_file))
-        hkl.dump(data, os.path.join(path, to_file), mode='w')
+        to_file = '-vs-'.join(self.targets)+'model-acc-{}.h5'.format(acc)
+        self.model.save(os.path.join(path, to_file))
         return self
 
     def load(self, path):
-        data = hkl.load(path)
-        k_model = Sequential.from_config(data['keras_model_config'])
-        model = Model(model=k_model)
-        model.inputs = data['inputs']
-        model.targets = data['targets']
-        return model
+        keras_model = load_model(path)
+        return Model(model=keras_model)
 
     
 class KddCupModel(object):
-    def __init__(self, inputs=[], targets=[], layers=[], model=None, model_path=None):
+    def __init__(self, inputs=[], targets=[], layers=[{'neurons': 1, 'activation': 'relu'}], 
+                       model=None, model_path=None):
+        """Model of KddCup data
+
+        @params inputs: list of input properties to consider; default to [] 
+                        meaning all properties
+        @params targets: list of attack_types to train on; 'other.' means
+                         any other type of attack; len(targets) >= 2
+                         for binary classification
+        @params layers: list of dicts each corresponding to a hidden layer; 
+                        must len(layers) >= 1
+        @params model: object of type model.Model
         """
 
-        data: object of type data.KddCupData
-        model: object of type model.Model
-        """
-        # if data:
-        #     self.data = data
         self.layers = layers
         if model_path:
             self.model = Model(model_path=model_path)
@@ -108,8 +107,8 @@ class KddCupModel(object):
             self.model = model
         else:
             self.model = None
-            self.inputs = inputs
-            self.targets = targets
+            self.inputs = sorted(inputs)
+            self.targets = sorted(targets)
         self.loss = -1
         self.accuracy = -2
 
@@ -123,12 +122,16 @@ class KddCupModel(object):
         for d in data:
             self.model = Model(d[self.inputs][self.targets], layers=self.layers, model=self.model)
             if self.model.output_dim == len(self.targets):
+                print("Training..")
                 self.model.train(batch_size=batch_size, epochs=epochs, verbose=verbose)
             else:
                 print("Skipping..")
+            self.model.inputs = self.inputs
+            self.model.targets = self.targets
         return self
 
     def test(self, data):
+        print("Testing..")
         l_a = [self.model.test(d[self.inputs][self.targets])['loss', 'accuracy'] for d in data]
         l_a = np.array(l_a)
         loss, acc = l_a[:, 0].tolist(), l_a[:, 1].tolist()
@@ -140,9 +143,18 @@ class KddCupModel(object):
         return self
 
     def save(self, path):
+        print("Saving..")
         self.model.save(path)
         return self
 
     def load(self, path):
+        print("Loading..")
         self.model.load(path)
+        return self
+
+    def print(self):
+        print("inputs: ", self.inputs)
+        print("targets: ", self.targets)
+        print("loss: ", self.loss)
+        print("accuracy: ", self.accuracy)
         return self

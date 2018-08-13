@@ -3,129 +3,102 @@ from deap import tools
 
 import random
 
-from core import KddCupData, KddCupModel
-
-properties = ['duration', 'protocol_type', 'service', 'flag', 'src_bytes', \
-              'dst_bytes', 'land', 'wrong_fragment', 'urgent', 'hot', \
-              'num_failed_logins', 'logged_in', 'num_compromised', \
-              'root_shell', 'su_attempted', 'num_root', 'num_file_creations', \
-              'num_shells', 'num_access_files', 'num_outbound_cmds', \
-              'is_host_login', 'is_guest_login', 'count', 'srv_count', \
-              'serror_rate', 'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate', \
-              'same_srv_rate', 'diff_srv_rate', 'srv_diff_host_rate', \
-              'dst_host_count', 'dst_host_srv_count', 'dst_host_same_srv_rate', \
-              'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate', \
-              'dst_host_srv_diff_host_rate', 'dst_host_serror_rate', \
-              'dst_host_srv_serror_rate', 'dst_host_rerror_rate', \
-              'dst_host_srv_rerror_rate', 'attack_type']
-
-brain = [{'neurons': 8, 'activation': 'relu'},
-         {'neurons': 4, 'activation': 'relu'}]
-
-targets = ['normal.', 'other.']
+from kddcup.core.data import KddCupData
+from kddcup.core.model import KddCupModel
+from kddcup.core.constants import kddcup_properties as properties
 
 
-# RANDOM INDIVIDUAL
-def random_inputs(the_set=properties[:-1], size=None):
-    if not size:
-        size = random.randint(1, len(the_set))
-    properties = random.sample(the_set, k=size)
-    return properties
+creator.create("FitnessMax", base.Fitness, weights=(-1.0, 1.0))
+creator.create("Individual", list, fitness=creator.FitnessMax)
+
+class Individual(creator.Individual):
+    def __init__(self, inputs, targets=[], brain=[], *args, **kwargs):
+        super(Individual, self).__init__(*args, **kwargs)
+        self[:] = inputs
+        if targets:
+            self.targets = targets
+        else:
+            self.targets = ['normal.', 'other.']
+        if not brain:
+            self.brain = [{'neurons': 1, 'activation': 'relu'}]
+        else:
+            self.brain = brain
 
 
-# FITNESS OPERATOR
-def evaluate(individual):
-    targets = ['normal.', 'other.']
-    return KddCupModel(inputs=individual, targets=targets, layers=brain)\
-                .train(KddCupData(filename='data/kddcup.data_10_percent_corrected', nrows=10000), epochs=5)\
-                .test(KddCupData(filename='data/corrected', nrows=1000))\
-                ['accuracy'],
+    def mate(self, other):
+        return tools.cxTwoPoint(self, other)
 
-# MUTATION OPERATOR
-def mutate(individual, union_difference_prob=.5): # We will use union or difference 50% of the time
-    mutator = random_inputs(individual, size=5)
-#     print('mutator: ', mutator, '\n', len(mutator))
-    mutated = []
-    if random.random() < union_difference_prob:
-        mutated = list(set(individual).union(set(mutator)))
-    else:
-        mutated = list(set(individual).difference(set(mutator)))
-    return mutated
+    def mutate(self, mutator, union_difference_prob=.5): # We will use union or difference 50% of the time
+        mutated = []
+        if random.random() < union_difference_prob:
+            mutated = list(set(self).union(set(mutator)))
+        else:
+            mutated = list(set(self).difference(set(mutator)))
+        return mutated
 
-# ALGORITHM
-def evolution():
-
-    # CREATE TYPES
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    creator.create("Individual", list, fitness=creator.FitnessMax)
-
-    CXPB, MUTPB, NGEN = 0.5, 0.2, 2
-
-    toolbox = base.Toolbox()
-
-    pop = None
-
-    for g in range(NGEN):
-        # INITIALISATION
-        
-        print("\nGENERATION ", g, '\n')
-
-    #     toolbox.register("attribute", lambda : random.sample(range(1, 100), random.randint(1,MAX_IND_SIZE)))
-        toolbox.register("individual", tools.initIterate, creator.Individual,
-                        lambda : random_inputs(size=random.randint(1, 41)))
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-        
-        toolbox.register("mate", tools.cxTwoPoint)
-        toolbox.register("mutate", mutate)
-        toolbox.register("select", tools.selTournament, tournsize=3)
-        toolbox.register("evaluate", evaluate)
-    
-        # ALGORITHM
-        
-        if not pop:
-            pop = toolbox.population(n=41)
-        print("    Population: ", [len(p) for p in pop])
-        # Evaluate the entire population
-        fitnesses = list(map(toolbox.evaluate, pop))
-        for ind, fit in zip(pop, fitnesses):
-            ind.fitness.values = fit
+    def evaluate(self, train_file, test_file):
+        self.fitness.values = KddCupModel(inputs=self, targets=self.targets, layers=self.brain)\
+                .train(KddCupData(train_file, nrows=50000, batch=5000), epochs=1, verbose=0)\
+                .test(KddCupData(test_file, nrows=10000))\
+                .print()\
+                ['loss', 'accuracy']
 
 
-        # Select the next generation individuals
-        offspring = toolbox.select(pop, len(pop))
-        # Clone the selected individuals
-        offspring = list(map(toolbox.clone, offspring))
+class Population(list):
+    def __init__(self, space=properties[:-1], size=41, targets=[], brain=[]):
+        self.space = space
+        self[:] = [Individual(self.__random_inputs(), targets=targets, brain=brain) for i in range(size)]
 
-        # Apply crossover and mutation on the offspring
-        for child1, child2 in zip(offspring[::2], offspring[1::2]):
+    def __random_inputs(self, size=None):
+        if not size:
+            size = random.randint(1, len(self.space))
+        properties = random.sample(self.space, k=size)
+        return properties
+
+    def evaluation(self, train_file, test_file):
+        for ind in self:
+            ind.evaluate(train_file=train_file, test_file=test_file)
+        self.train_env = train_file
+        self.test_env = test_file
+        return self
+
+    def __re_evaluation(self):
+        invalid_ind = [ind for ind in self if not ind.fitness.valid]
+        for ind in self:
+            ind.evaluate(train_file=self.train_env, test_file=self.test_env)
+        return self
+
+
+    def selection(self):
+        offspring = tools.selTournament(self, k=len(self), tournsize=3)
+        self[:] = base.Toolbox().clone(offspring)
+        return self
+
+    def crossover(self, CXPB=0.5):
+        for child1, child2 in zip(self[::2], self[1::2]):
             if random.random() < CXPB:
-                toolbox.mate(child1, child2)
+                child1.mate(child2)
                 del child1.fitness.values
                 del child2.fitness.values
+        return self
 
-        for mutant in offspring:
+    def mutation(self, MUTPB=0.2):
+        for mutant in self:
             if random.random() < MUTPB:
-                toolbox.mutate(mutant)
+                mutant.mutate(self.__random_inputs(size=5))
                 del mutant.fitness.values
+        return self.__re_evaluation()
 
-        # Evaluate the individuals with an invalid fitness
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        fitnesses = list(map(toolbox.evaluate, invalid_ind))
-        for ind, fit in zip(invalid_ind, fitnesses):
-            ind.fitness.values = fit
 
-        # The population is entirely replaced by the offspring
-        pop[:] = offspring
-        
-        
-        # Unregistering tools
-        toolbox.unregister("individual")
-        toolbox.unregister("population")
-        toolbox.unregister("mate")
-        toolbox.unregister("mutate")
-        toolbox.unregister("select")
-        toolbox.unregister("evaluate")
-    return pop
+    def evolve(self, train_env=None, test_env=None, NGEN=50):
+        if NGEN == 0:
+            return self 
+        print("\nGENERATION ", NGEN, '\n')
+        print("    Population: ", [len(p) for p in self])
+        return self.evaluation(train_file=train_env, test_file=test_env)\
+                   .selection()\
+                   .crossover()\
+                   .mutation()\
+                   .evolve(train_env, test_env, NGEN=NGEN-1)
 
-if __name__ == '__main__':
-    print(evolution())
+    

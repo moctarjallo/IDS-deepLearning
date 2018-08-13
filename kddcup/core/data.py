@@ -1,4 +1,6 @@
-from backend import np, pd, normalize
+from kddcup.backend import np, pd, normalize
+
+from kddcup.core.constants import names_file
 
 class Data:
     def __init__(self, dataframe):
@@ -117,8 +119,8 @@ class KddCupData(object):
     
     @property
     def __names(self):
-        with open('./data/kddcup.names.txt') as names_file:
-            lines = names_file.readlines()[1:]
+        with open(names_file) as f:
+            lines = f.readlines()[1:]
             names = [lines[i].split(':')[0] for i in range(len(lines))]
         names.append('attack_type')
         return names
@@ -135,12 +137,5 @@ class KddCupData(object):
         self.shape = current.shape
         return Data(current)
 
-
-         
-
-
-
-if __name__=='__main__':
-    data = KddCupData()
 
 

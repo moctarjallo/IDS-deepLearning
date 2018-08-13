@@ -1,0 +1,8 @@
+Specs
+draft.py
+kddcup/__pycache__/*
+kddcup/core/__pycache__/*
+kddcup/notebooks/*
+docs/*
+tests/*
+issues/*
