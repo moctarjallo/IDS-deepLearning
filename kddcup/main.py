@@ -20,6 +20,7 @@ if __name__ == '__main__':
     loss, acc = KddCupModel(model_path='/home/mctrjalloh/.kddcup/ckpts/normal.-vs-other.model-acc-12.09.h5',
                             inputs=inputs, targets=targets)\
                     .test(KddCupData(filename=testing_file, nrows=10000))\
+                    .print()\
                     ['loss', 'accuracy']
     print(loss)
     print(acc)

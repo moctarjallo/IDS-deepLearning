@@ -134,8 +134,13 @@ class KddCupModel(object):
         return self
 
     def print(self):
-        print("inputs: ", self.inputs)
-        print("targets: ", self.targets)
+        all_inputs, all_targets = '', ''
+        if not self.inputs: 
+            all_inputs = '(all inputs)'
+        if not self.targets:
+            all_targets = '(all targets)'
+        print("inputs: ", self.inputs, all_inputs)
+        print("targets: ", self.targets, all_targets)
         print("loss: ", self.loss)
         print("accuracy: ", self.accuracy)
         return self
