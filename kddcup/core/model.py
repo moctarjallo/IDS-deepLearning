@@ -13,8 +13,7 @@ class Model(object):
 
         data: object of type data.Data
         layers: a list of dicts, each representing a layer
-        model: object of type of keras.models.Sequential
-        model_path: filepath where a keras model is saved
+        kmodel: object of type of keras.models.Sequential
         """
         if data:
             self.data = data.binarized
@@ -71,7 +70,7 @@ class Model(object):
     
 class KddCupModel(object):
     def __init__(self, inputs=[], targets=[], layers=[{'neurons': 1, 'activation': 'relu'}], 
-                       model=None, model_path=None):
+                       model_path=None):
         """Initialize self.model and set/get inputs and targets
 
         @params inputs: list of input properties to consider; default to [] 
@@ -81,12 +80,11 @@ class KddCupModel(object):
                          for binary classification
         @params layers: list of dicts each corresponding to a hidden layer; 
                         must len(layers) >= 1
-        @params model: object of type model.Model
+        @params model_path: path file to a keras model
         """
         self.inputs = sorted(inputs)
         self.targets = sorted(targets)
         self.layers = layers
-        self.model = model
         if model_path:
             self = self.load(model_path)
         self.loss = -1
