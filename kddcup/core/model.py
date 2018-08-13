@@ -8,7 +8,7 @@ import os
 
 
 class Model(object):
-    def __init__(self, data=None, layers=[], model=None, model_path=None):
+    def __init__(self, data=None, layers=[], kmodel=None):
         """
 
         data: object of type data.Data
@@ -18,14 +18,12 @@ class Model(object):
         """
         if data:
             self.data = data.binarized
-        if model:
-            self.model = model.model
-        elif model_path:
-            self = self.load(model_path)
+        if kmodel:
+            self.kmodel = kmodel
+        elif layers:
+            self.kmodel = self.__build_model(layers)
         else:
-            self.model = self.__build_model(layers)
-        self.inputs = []
-        self.targets = []
+            self.kmodel = None
         self.loss = -1
         self.accuracy = -2
 
@@ -57,7 +55,7 @@ class Model(object):
         return model
 
     def train(self, batch_size=128, epochs=10, verbose=1):
-        self.model.fit(self.data.X, self.data.Y, batch_size=batch_size, epochs=epochs, verbose=verbose)
+        self.kmodel.fit(self.data.X, self.data.Y, batch_size=batch_size, epochs=epochs, verbose=verbose)
         return self
 
     def test(self, data=None):
@@ -65,24 +63,16 @@ class Model(object):
             data = data.binarized
         else:
             data = self.data
-        self.loss, self.accuracy = self.model.evaluate(data.X, data.Y)
+        self.loss, self.accuracy = self.kmodel.evaluate(data.X, data.Y)
         return self
 
-    def save(self, path):
-        loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
-        to_file = '-vs-'.join(self.targets)+'model-acc-{}.h5'.format(acc)
-        self.model.save(os.path.join(path, to_file))
-        return self
 
-    def load(self, path):
-        keras_model = load_model(path)
-        return Model(model=keras_model)
 
     
 class KddCupModel(object):
     def __init__(self, inputs=[], targets=[], layers=[{'neurons': 1, 'activation': 'relu'}], 
                        model=None, model_path=None):
-        """Model of KddCup data
+        """Initialize self.model and set/get inputs and targets
 
         @params inputs: list of input properties to consider; default to [] 
                         meaning all properties
@@ -93,20 +83,10 @@ class KddCupModel(object):
                         must len(layers) >= 1
         @params model: object of type model.Model
         """
-
+        self.inputs = sorted(inputs)
+        self.targets = sorted(targets)
         self.layers = layers
-        if model_path:
-            self.model = Model(model_path=model_path)
-            self.inputs = self.model.inputs
-            self.targets = self.model.targets
-        elif model:
-            model.inputs = inputs
-            model.targets = targets
-            self.model = model
-        else:
-            self.model = None
-            self.inputs = sorted(inputs)
-            self.targets = sorted(targets)
+        self.model = model
         self.loss = -1
         self.accuracy = -2
 
@@ -117,15 +97,15 @@ class KddCupModel(object):
         return [self.__dict__[key] for key in keys]
     
     def train(self, data, batch_size=128, epochs=5, verbose=1):
+        model = Model() # emply model with kmodel==None
         for d in data:
-            self.model = Model(d[self.inputs][self.targets], layers=self.layers, model=self.model)
-            if self.model.output_dim == len(self.targets):
+            model = Model(d[self.inputs][self.targets], layers=self.layers, kmodel=model.kmodel)
+            if model.output_dim == len(self.targets):
                 print("Training..")
-                self.model.train(batch_size=batch_size, epochs=epochs, verbose=verbose)
+                model.train(batch_size=batch_size, epochs=epochs, verbose=verbose)
             else:
                 print("Skipping..")
-            self.model.inputs = self.inputs
-            self.model.targets = self.targets
+        self.model = model
         return self
 
     def test(self, data):
@@ -141,13 +121,16 @@ class KddCupModel(object):
         return self
 
     def save(self, path):
-        print("Saving..")
-        self.model.save(path)
+        print('Saving..')
+        loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
+        to_file = '-vs-'.join(self.targets)+'model-acc-{}.h5'.format(acc)
+        self.model.kmodel.save(os.path.join(path, to_file))
         return self
 
     def load(self, path):
-        print("Loading..")
-        self.model.load(path)
+        print('Loading..')
+        keras_model = load_model(path)
+        self.model = Model(kmodel=keras_model)
         return self
 
     def print(self):
