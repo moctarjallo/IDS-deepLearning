@@ -11,15 +11,15 @@ targets = ['normal.', 'other.']
 
 if __name__ == '__main__':
     # loss, acc = KddCupModel(inputs=inputs, targets=targets)\
-    #                 .train(KddCupData(training_file, nrows=100000, batch=10000), epochs=3)\
-    #                 .test(KddCupData(testing_file, nrows=10000))\
+    #                 .train(KddCupData(training_file, batch=100000), epochs=15)\
+    #                 .test(KddCupData(testing_file))\
     #                 .save('/home/mctrjalloh/.kddcup/ckpts')\
     #                 .print()\
     #                 ['loss', 'accuracy']
 
-    loss, acc = KddCupModel(model_path='/home/mctrjalloh/.kddcup/ckpts/normal.-vs-other.model-acc-12.09.h5',
+    loss, acc = KddCupModel(model_path='/home/mctrjalloh/.kddcup/ckpts/normal.-vs-other.model-acc-91.6.h5',
                             inputs=inputs, targets=targets)\
-                    .test(KddCupData(filename=testing_file, nrows=10000))\
+                    .test(KddCupData(filename=testing_file))\
                     .print()\
                     ['loss', 'accuracy']
     print(loss)

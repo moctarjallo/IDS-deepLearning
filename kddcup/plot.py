@@ -9,8 +9,10 @@ import plotly.graph_objs as go
 from collections import deque
 import numpy as np
 
+from kddcup.core.constants import testing_file
+
 from core.data import KddCupData
-df = next(KddCupData(filename='data/corrected', nrows=1000))
+df = next(KddCupData(filename=testing_file, nrows=1000))
 
 X = deque(maxlen=20)
 X.append(0)

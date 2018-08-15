@@ -36,13 +36,14 @@ class Individual(creator.Individual):
             mutated = list(set(self).difference(set(mutator)))
         return mutated
 
-    def evaluate(self, train_file, test_file):
+    def evaluate(self, train_env, test_env, surface=None, hops=None, 
+                 iterations=1, verbose=0, test_surface=None, test_hops=None):
+
         self.fitness.values = KddCupModel(inputs=self, targets=self.targets, layers=self.brain)\
-                .train(KddCupData(train_file, nrows=50000, batch=5000), epochs=1, verbose=0)\
-                .test(KddCupData(test_file, nrows=10000))\
+                .train(KddCupData(train_env, nrows=surface, batch=hops), epochs=iterations, verbose=verbose)\
+                .test(KddCupData(test_env, nrows=test_surface, batch=test_hops))\
                 .print()\
                 ['loss', 'accuracy']
-
 
 class Population(list):
     def __init__(self, space=properties[:-1], size=41, targets=[], brain=[]):
@@ -55,17 +56,20 @@ class Population(list):
         properties = random.sample(self.space, k=size)
         return properties
 
-    def evaluation(self, train_file, test_file):
+    def evaluation(self, train_env, test_env, surface=None, hops=None,
+                   iterations=1, verbose=0, test_surface=None, test_hops=None):
         for ind in self:
-            ind.evaluate(train_file=train_file, test_file=test_file)
-        self.train_env = train_file
-        self.test_env = test_file
+            ind.evaluate(train_env=train_env, test_env=test_env, 
+                        surface=surface, iterations=iterations, 
+                        verbose=verbose, test_surface=test_surface)
+        self.train_env = train_env
+        self.test_env = test_env
         return self
 
     def __re_evaluation(self):
         invalid_ind = [ind for ind in self if not ind.fitness.valid]
-        for ind in self:
-            ind.evaluate(train_file=self.train_env, test_file=self.test_env)
+        for ind in invalid_ind:
+            ind.evaluate(train_env=self.train_env, test_env=self.test_env)
         return self
 
 
@@ -90,15 +94,19 @@ class Population(list):
         return self.__re_evaluation()
 
 
-    def evolve(self, train_env=None, test_env=None, NGEN=2):
+    def evolve(self, train_env, test_env, surface=None, hops=None,
+                iterations=1, verbose=0, test_surface=None, test_hops=None, 
+                MUTPB=0.2, CXPB=0.5, NGEN=2):
         if NGEN == 0:
             return self 
         print("\nGENERATION ", NGEN, '\n')
         print("    Population: ", [len(p) for p in self])
-        return self.evaluation(train_file=train_env, test_file=test_env)\
+        return self.evaluation(train_env=train_env, test_env=test_env,
+                                surface=None, hops=None, iterations=1,
+                                verbose=0, test_surface=None, test_hops=None)\
                    .selection()\
-                   .crossover()\
-                   .mutation()\
+                   .crossover(CXPB=CXPB)\
+                   .mutation(MUTPB=MUTPB)\
                    .evolve(train_env, test_env, NGEN=NGEN-1)
 
     
