@@ -2,6 +2,8 @@ from keras.models import Sequential, load_model
 from keras.layers import Dense
 from keras.callbacks import TensorBoard, ModelCheckpoint
 
+from kddcup.core.constants import kddcup_targets
+
 import numpy as np
 
 import os
@@ -83,7 +85,10 @@ class KddCupModel(object):
         @params model_path: path file to a keras model
         """
         self.inputs = sorted(inputs)
-        self.targets = sorted(targets)
+        if targets:
+            self.targets = sorted(targets)
+        else:
+            self.targets = sorted(kddcup_targets)
         self.layers = layers
         if model_path:
             self = self.load(model_path)
@@ -141,6 +146,7 @@ class KddCupModel(object):
             all_targets = '(all targets)'
         print("inputs: ", self.inputs, all_inputs)
         print("targets: ", self.targets, all_targets)
+        print("layers: ", self.layers)
         print("loss: ", self.loss)
         print("accuracy: ", self.accuracy)
         return self

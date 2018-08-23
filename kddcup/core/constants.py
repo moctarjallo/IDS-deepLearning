@@ -15,3 +15,9 @@ kddcup_properties = ['duration', 'protocol_type', 'service', 'flag', 'src_bytes'
                      'dst_host_srv_diff_host_rate', 'dst_host_serror_rate', \
                      'dst_host_srv_serror_rate', 'dst_host_rerror_rate', \
                      'dst_host_srv_rerror_rate', 'attack_type']
+
+kddcup_targets = ['smurf.', 'multihop.', 'rootkit.', 'phf.', 'neptune.',
+                  'satan.', 'land.', 'guess_passwd.', 'warezmaster.', 
+                  'ftp_write.', 'teardrop.', 'loadmodule.', 'imap.', 'spy.', 
+                  'ipsweep.', 'pod.','buffer_overflow.', 'warezclient.', 
+                  'normal.', 'nmap.', 'portsweep.', 'perl.', 'back.']
