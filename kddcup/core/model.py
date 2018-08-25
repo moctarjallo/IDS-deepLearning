@@ -126,10 +126,11 @@ class KddCupModel(object):
         return self
 
     def save(self, path):
-        print('Saving..')
-        loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
-        to_file = '-vs-'.join(self.targets)+'model-acc-{}.h5'.format(acc)
-        self.model.kmodel.save(os.path.join(path, to_file))
+        if path:
+            print('Saving..')
+            loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
+            to_file = '-vs-'.join(self.targets)+'model-acc-{}.h5'.format(acc)
+            self.model.kmodel.save(os.path.join(path, to_file))
         return self
 
     def load(self, path):
