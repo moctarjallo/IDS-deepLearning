@@ -1,0 +1,27 @@
+{
+  "inputs": [],
+  "targets": ["normal.", "other."],
+  "layers": [
+    {
+      "neurons": 1,
+      "activation": "relu"
+    }
+  ],
+  "train": {
+    "file": "/home/mctrjalloh/.kddcup/kddcup.data_10_percent_corrected",
+    "rows": 100000,
+    "batch_iter": 10000,
+    "batch_train": 128,
+    "epochs": 5,
+    "verbose": 1,
+    "save_model": "/home/mctrjalloh/.kddcup/ckpts",
+    "save_board": "/home/mctrjalloh/.kddcup/events"
+  },
+  "test": {
+    "file": "/home/mctrjalloh/.kddcup/corrected",
+    "rows": null,
+    "batch_iter": null,
+    "model_path": "/home/mctrjalloh/.kddcup/ckpts/last_model.h5",
+    "verbose": 1
+  }
+}
