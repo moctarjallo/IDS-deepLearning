@@ -4,6 +4,8 @@ from kddcup.core.model import KddCupModel
 from kddcup.evolution import Population
 
 import json
+import os
+import pathlib
 
 
 class KddCup(object):
@@ -11,14 +13,15 @@ class KddCup(object):
         with open(config_file) as f:
             config = json.load(f)
         self.config = config
+        self.home = str(pathlib.Path.home())
 
     """Train a model on input data and return loss and accuracy"""
 
     def train(self):
-        train_data = KddCupData(filename=self.config["train"]["file"],
+        train_data = KddCupData(filename=os.path.join(self.home, self.config["train"]["file"]),
                                 nrows=self.config["train"]["rows"],
                                 batch=self.config["train"]["batch_iter"])
-        test_data = KddCupData(filename=self.config["test"]["file"],
+        test_data = KddCupData(filename=os.path.join(self.home, self.config["test"]["file"]),
                                nrows=self.config["test"]["rows"],
                                batch=self.config["test"]["batch_iter"])
         model = KddCupModel(inputs=self.config["inputs"],
@@ -32,19 +35,20 @@ class KddCup(object):
             .save(path=self.config["train"]["save_model"])['model_path']
 
     def test(self):
-        data = KddCupData(filename=self.config["test"]["file"],
+        data = KddCupData(filename=os.path.join(self.home, self.config["test"]["file"]),
                           nrows=self.config["test"]["rows"],
                           batch=self.config["test"]["batch_iter"])
         model = KddCupModel(
-            model_path=self.config["test"]["model_path"]).load()
+            model_path=os.path.join(self.home, self.config["test"]["model_path"])).load()
         return model.test(data)['loss', 'accuracy']
 
     def evolve(self):
         pop = Population(space=self.config["kddcup_properties"][:-1],
                          targets=self.config["targets"],
                          brain=self.config["layers"])
-        return pop.evolve(train_env=self.config["train"]["file"],
-                          test_env=self.config["test"]["file"],
+        return pop.evolve(train_env=os.path.join(self.home, self.config["train"]["file"]),
+                          test_env=os.path.join(
+                              self.home, self.config["test"]["file"]),
                           train_surface=self.config["train"]["rows"],
                           train_hops=self.config["train"]["batch_iter"],
                           train_iterations=self.config["train"]["epochs"],

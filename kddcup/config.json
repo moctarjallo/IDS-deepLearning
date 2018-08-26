@@ -77,20 +77,20 @@
     }
   ],
   "train": {
-    "file": "/home/mctrjalloh/.kddcup/kddcup.data_10_percent_corrected",
+    "file": ".kddcup/kddcup.data_10_percent_corrected",
     "rows": 100000,
     "batch_iter": 10000,
     "batch_train": 128,
     "epochs": 2,
     "verbose": 0,
-    "save_model": "/home/mctrjalloh/.kddcup/ckpts",
-    "save_board": "/home/mctrjalloh/.kddcup/events"
+    "save_model": ".kddcup/ckpts",
+    "save_board": ".kddcup/events"
   },
   "test": {
-    "file": "/home/mctrjalloh/.kddcup/corrected",
+    "file": ".kddcup/corrected",
     "rows": null,
     "batch_iter": null,
-    "model_path": "/home/mctrjalloh/.kddcup/ckpts/normal.-vs-other.model-acc-96.86.json",
+    "model_path": ".kddcup/ckpts/normal.-vs-other.model-acc-96.86.json",
     "verbose": 1
   },
   "evolve": {
