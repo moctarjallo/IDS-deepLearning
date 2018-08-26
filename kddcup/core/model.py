@@ -8,6 +8,8 @@ import numpy as np
 
 import os
 
+import json
+
 
 class Model(object):
     def __init__(self, data=None, layers=[], kmodel=None):
@@ -117,6 +119,7 @@ class KddCupModel(object):
         print("Testing..")
         l_a = [self.model.test(d[self.inputs][self.targets])['loss', 'accuracy'] for d in data]
         l_a = np.array(l_a)
+        print(l_a)
         loss, acc = l_a[:, 0].tolist(), l_a[:, 1].tolist()
         if len(loss) == 1 and len(acc) == 1:
             loss = loss[0]
@@ -129,13 +132,20 @@ class KddCupModel(object):
         if path:
             print('Saving..')
             loss, acc = round(self.loss, 4), round(100*self.accuracy, 2)
-            to_file = '-vs-'.join(self.targets)+'model-acc-{}.h5'.format(acc)
-            self.model.kmodel.save(os.path.join(path, to_file))
+            to_file = '-vs-'.join(self.targets)+'model-acc-{}.json'.format(acc)
+            data = {"inputs": self.inputs, "targets": self.targets,
+                    "k_model": self.model.kmodel.get_config()}
+            with open(os.path.join(path, to_file), 'w') as f:  
+                json.dump(data, f)
         return self
 
     def load(self, path):
         print('Loading..')
-        keras_model = load_model(path)
+        with open(path) as f:  
+            data = json.load(f)
+        self.inputs, self.targets = data["inputs"], data["targets"]
+        keras_model = Sequential.from_config(data["k_model"])
+        keras_model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
         self.model = Model(kmodel=keras_model)
         return self
 

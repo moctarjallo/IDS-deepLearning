@@ -24,6 +24,7 @@ class KddCup(object):
                            batch_size=self.config["train"]["batch_train"], 
                            epochs=self.config["train"]["epochs"], 
                            verbose=self.config["train"]["verbose"])\
+                    .test(data)\
                     .save(path=self.config["train"]["save_model"])\
                     ['loss', 'accuracy']
 
@@ -58,6 +59,6 @@ class KddCup(object):
 
 
 if __name__ == '__main__':
-    
-    pop = KddCup('kddcup/config.json').evolve()
-    print(pop)
+    KddCup('kddcup/config.json').train()
+    loss, acc = KddCup('kddcup/config.json').test()
+    print(loss, acc)

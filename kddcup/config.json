@@ -81,7 +81,7 @@
     "rows": 100000,
     "batch_iter": 10000,
     "batch_train": 128,
-    "epochs": 5,
+    "epochs": 2,
     "verbose": 0,
     "save_model": "/home/mctrjalloh/.kddcup/ckpts",
     "save_board": "/home/mctrjalloh/.kddcup/events"
@@ -90,7 +90,7 @@
     "file": "/home/mctrjalloh/.kddcup/corrected",
     "rows": 10000,
     "batch_iter": null,
-    "model_path": "/home/mctrjalloh/.kddcup/ckpts/last_model.h5",
+    "model_path": "/home/mctrjalloh/.kddcup/ckpts/last_model.json",
     "verbose": 1
   },
   "evolve": {
