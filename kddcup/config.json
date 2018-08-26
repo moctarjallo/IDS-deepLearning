@@ -88,9 +88,9 @@
   },
   "test": {
     "file": "/home/mctrjalloh/.kddcup/corrected",
-    "rows": 10000,
+    "rows": null,
     "batch_iter": null,
-    "model_path": "/home/mctrjalloh/.kddcup/ckpts/last_model.json",
+    "model_path": "/home/mctrjalloh/.kddcup/ckpts/normal.-vs-other.model-acc-96.86.json",
     "verbose": 1
   },
   "evolve": {
