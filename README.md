@@ -9,7 +9,7 @@ INSTALLATION:
 This repository has been tested with python3.6.5 via anaconda
 Install python 3.6 anaconda/miniconda following this link:
 
-https://conda.io/docs/user-guide/install/index.html
+    https://conda.io/docs/user-guide/install/index.html
 
 Clone this repository (assuming you have git installed):
 
@@ -32,12 +32,13 @@ Then use pip to install package dependencies:
 
 Download the training and testing data for this project from this link:
 
-http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html
+    http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html
 
 click on these links download the training and testing data:
-kddcup.data_10_percent.gz A 10% subset. (2.1M; 75M Uncompressed) (training data)
-corrected.gz (testing data)
-kddcup.names (names file: data column names)
+
+    kddcup.data_10_percent.gz A 10% subset. (2.1M; 75M Uncompressed) (training data)
+    corrected.gz (testing data)
+    kddcup.names (names file: data column names)
   
 Move these files to a folder located in home:
   
