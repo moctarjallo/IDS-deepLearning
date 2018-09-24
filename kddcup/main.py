@@ -1,3 +1,20 @@
+"""kddcup program
+
+Usage:
+    kddcup train
+    kddcup test
+    kddcup train FILE [--nrows=<int> --batch --batch_train --epochs --verbose] 
+    kddcup -h | --help
+
+Options:
+    --nrows=<int>             number of rows to read from FILE [default: 10000]
+    --batch=<None>             iteration size over data being read from FILE [default: None]
+    --bach_train=<int>        training bacth [default: 128]
+    --epochs=<int>            epochs [default: 5]
+    --verbose=<int>           show the training [default: 1]
+    -h --help                 Show this screen
+"""
+
 from kddcup.core.data import KddCupData
 from kddcup.core.model import KddCupModel
 
@@ -7,9 +24,14 @@ import json
 import os
 import pathlib
 
+from docopt import docopt
+
+
+HOME = str(pathlib.Path.home())
+
 
 class KddCup(object):
-    def __init__(self, config_file="./config.json"):
+    def __init__(self, config_file="./kddcup/config.json"):
         with open(config_file) as f:
             config = json.load(f)
         self.config = config
@@ -32,7 +54,7 @@ class KddCup(object):
                            epochs=self.config["train"]["epochs"],
                            verbose=self.config["train"]["verbose"])\
             .test(data=test_data)\
-            .save(path=self.config["train"]["save_model"])['model_path']
+            .save(path=os.path.join(self.home, self.config["train"]["save_model"]))['model_path']
 
     def test(self):
         data = KddCupData(filename=os.path.join(self.home, self.config["test"]["file"]),
@@ -63,8 +85,25 @@ class KddCup(object):
         pass
 
 
+# def train(file, nrows=10000, batch=None, batch_train=128, epochs=10, verbose=1, save_path='.kddcup/ckpts'):
+#     train_data = KddCupData(filename=os.path.join(
+#         HOME, file), nrows=nrows, batch=batch)
+#     model = KddCupModel(targets=['normal.', 'other.'])
+#     return model.train(data=train_data, batch_size=batch_train, epochs=epochs, verbose=verbose)\
+#         .test(data=KddCupData(filename=os.path.join(HOME, file), nrows=nrows, batch=batch))\
+#         .save(path=os.path.join(HOME, save_path))['model_path']
+
+
+def cli():
+    program = KddCup()
+    args = docopt(__doc__)
+    if args['train']:
+        model = program.train()
+        print(model)
+    if args['test']:
+        loss, acc = program.test()
+        print(loss, acc)
+
+
 if __name__ == '__main__':
-    # model_path = KddCup('kddcup/config.json').train()
-    loss, acc = KddCup('kddcup/config.json').test()
-    print(loss, acc)
-    # print(model_path)
+    cli()
