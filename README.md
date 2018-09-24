@@ -67,3 +67,9 @@ But for a quick run now, run:
     python kddcup/main.py
 
 For now you can play around by importing objects and calling their methods
+
+You can modify the config.json file to achieve intended results
+
+    config.json
+    
+    
