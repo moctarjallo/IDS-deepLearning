@@ -7,6 +7,8 @@ import json
 import os
 import pathlib
 
+HOME = str(pathlib.Path.home())
+
 
 class KddCup(object):
     def __init__(self, config_file="./config.json"):
@@ -63,8 +65,19 @@ class KddCup(object):
         pass
 
 
+def train(file, nrows=10000, batch=None, batch_train=128, epochs=10, verbose=1, save_path='.kddcup/ckpts'):
+    train_data = KddCupData(filename=os.path.join(
+        HOME, file), nrows=nrows, batch=batch)
+    model = KddCupModel(targets=['normal.', 'other.'])
+    return model.train(data=train_data, batch_size=batch_train, epochs=epochs, verbose=verbose)\
+        .test(data=KddCupData(filename=os.path.join(HOME, file), nrows=nrows, batch=batch))\
+        .save(path=os.path.join(HOME, save_path))['model_path']
+
+
 if __name__ == '__main__':
-    # model_path = KddCup('kddcup/config.json').train()
-    loss, acc = KddCup('kddcup/config.json').test()
-    print(loss, acc)
-    # print(model_path)
+    # # model_path = KddCup('kddcup/config.json').train()
+    # loss, acc = KddCup('kddcup/config.json').test()
+    # print(loss, acc)
+    # # print(model_path)
+    path = train('.kddcup/kddcup.data_10_percent_corrected', 10000)
+    print(path)
