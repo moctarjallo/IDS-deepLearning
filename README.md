@@ -9,7 +9,7 @@ INSTALLATION:
 This repository has been tested with python3.6.5 via anaconda
 Install python 3.6 anaconda/miniconda following this link:
 
-    https://conda.io/docs/user-guide/install/index.html
+  https://conda.io/docs/user-guide/install/index.html
 
 Clone this repository (assuming you have git installed):
 
@@ -32,7 +32,7 @@ Then use pip to install package dependencies:
 
 Download the training and testing data for this project from this link:
 
-    http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html
+  http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html
 
 click on these links download the training and testing data:
 
