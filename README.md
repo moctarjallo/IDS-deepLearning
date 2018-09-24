@@ -26,6 +26,16 @@ Use it to install `pip`
 
 Then use pip to install package dependencies:
 
+But first make a virtual environment:
+
+    conda create kddcup
+    
+Activate the virtual env:
+  
+    source activate kddcup
+    
+Now install the dependencies:
+
     pip install -r requirements.txt
 
 (The requirements.txt file lives at the root of the downloaded repository)
@@ -54,6 +64,6 @@ USAGE:
 
 But for a quick run now, run:
   
- python kddcup/main.py
+    python kddcup/main.py
 
 For now you can play around by importing objects and calling their methods
