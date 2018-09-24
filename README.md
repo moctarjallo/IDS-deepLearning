@@ -41,10 +41,10 @@ kddcup.names (names file: data column names)
   
 Move these files to a folder located in home:
   
- cd ~
-mkdir .kddcup
-mv <downloaded files> .kddcup/
-  
+    cd ~
+    mkdir .kddcup
+    mv <downloaded files> .kddcup/
+   
   
   
 USAGE:
