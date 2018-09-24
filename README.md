@@ -28,7 +28,7 @@ Then use pip to install package dependencies:
 
 But first make a virtual environment:
 
-    conda create kddcup
+    conda create -n kddcup
     
 Activate the virtual env:
   
