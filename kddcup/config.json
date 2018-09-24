@@ -88,7 +88,7 @@
   },
   "test": {
     "file": ".kddcup/corrected",
-    "rows": null,
+    "rows": 10000,
     "batch_iter": null,
     "model_path": ".kddcup/ckpts/normal.-vs-other.model-acc-96.86.json",
     "verbose": 1
