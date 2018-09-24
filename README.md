@@ -60,15 +60,19 @@ Move these files to a folder located in home:
   
 USAGE:
   
- A convenient command line interface is coming soon..
+Create an alias for more convenience:
+    
+    alias kddcup="python kddcup/main.py"
 
-But for a quick run now, run:
+Now run:
   
-    python kddcup/main.py
+    kddcup train    # to train a model
+    kddcup test     # to test a model  (not yet implemented)
+    kddcup predict  # to classify a packet (not yet implemented)
 
 For now you can play around by importing objects and calling their methods
 
-You can modify the config.json file to achieve intended results
+You can modify the config.json file to change some parameters of training and testing
 
     config.json
     
