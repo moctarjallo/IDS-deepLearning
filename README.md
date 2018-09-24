@@ -59,13 +59,13 @@ Move these files to a folder located in home:
 USAGE:
 
 Create an alias for more convenience:
-  
- alias kddcup="python kddcup/main.py"
+
+alias kddcup="python kddcup/main.py"
 
 Now run:
 
     kddcup train    # to train a model
-    kddcup test     # to test a model  (not yet implemented)
+    kddcup test     # to test a model
     kddcup predict  # to classify a packet (not yet implemented)
 
 You can also play around by importing objects and calling their methods
