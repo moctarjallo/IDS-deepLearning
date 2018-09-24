@@ -70,7 +70,7 @@ Now run:
     kddcup test     # to test a model  (not yet implemented)
     kddcup predict  # to classify a packet (not yet implemented)
 
-For now you can play around by importing objects and calling their methods
+You can also play around by importing objects and calling their methods
 
 You can modify the config.json file to change some parameters of training and testing
 
