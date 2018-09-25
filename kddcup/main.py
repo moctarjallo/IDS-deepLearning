@@ -3,6 +3,8 @@
 Usage:
     kddcup train
     kddcup test
+    kddcup plot
+    kddcup predict <packet.csv>
     kddcup train FILE [--nrows=<int> --batch --batch_train --epochs --verbose] 
     kddcup -h | --help
 
@@ -19,6 +21,8 @@ from kddcup.core.data import KddCupData
 from kddcup.core.model import KddCupModel
 
 from kddcup.evolution import Population
+
+from plot import app
 
 import json
 import os
@@ -103,6 +107,8 @@ def cli():
     if args['test']:
         loss, acc = program.test()
         print(loss, acc)
+    if args['plot']:
+        app.run_server(debug=True)
 
 
 if __name__ == '__main__':

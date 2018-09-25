@@ -67,6 +67,7 @@ Now run:
     kddcup train    # to train a model
     kddcup test     # to test a model
     kddcup predict  # to classify a packet (not yet implemented)
+    kddcup plot     # to plot some properties
 
 You can also play around by importing objects and calling their methods
 
