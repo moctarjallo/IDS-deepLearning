@@ -82,7 +82,7 @@
     "batch_iter": 10000,
     "batch_train": 128,
     "epochs": 2,
-    "verbose": 0,
+    "verbose": 1,
     "save_model": ".kddcup/ckpts",
     "save_board": ".kddcup/events"
   },
