@@ -1,19 +1,20 @@
 """kddcup program
 
 Usage:
-    kddcup train
-    kddcup test
+    kddcup train [--file --nrows=<int> --batch --iter --batch_train --epochs --verbose --show] 
+    kddcup test [--model --file --nrows=<int> --batch  --verbose --show]
     kddcup plot
-    kddcup predict <packet.csv>
-    kddcup train FILE [--nrows=<int> --batch --batch_train --epochs --verbose] 
+    kddcup predict [--packet=<csvfile>]
     kddcup -h | --help
 
 Options:
     --nrows=<int>             number of rows to read from FILE [default: 10000]
-    --batch=<None>             iteration size over data being read from FILE [default: None]
-    --bach_train=<int>        training bacth [default: 128]
+    --batch=<int>             iteration size over data being read from FILE [default: 10000]
+    --trainbatch=<int>        training batch [default: 128]
     --epochs=<int>            epochs [default: 5]
     --verbose=<int>           show the training [default: 1]
+    --model=<modelpath>       path to a saved model
+    --show=<int>              whether to show the training/testing process or not
     -h --help                 Show this screen
 """
 
@@ -102,6 +103,20 @@ def cli():
     program = KddCup()
     args = docopt(__doc__)
     if args['train']:
+        if args['--file']:
+            program.config["train"]["file"] = args['file']
+        if args['--nrows']:
+            program.config["train"]["rows"] = int(args['--nrows'])
+        if args['--batch']:
+            program.config["train"]["batch_iter"] = int(args['--batch'])
+        print(args)
+        if args['--batch_train']:
+            program.config["train"]["batch_train"] = int(args['--batch_train'])
+        # print(program.config)
+        if args['--epochs']:
+            program.config["train"]["epochs"] = int(args['--epochs'])
+        if args['--show']:
+            program.config["train"]["verbose"] = int(args['--show'])
         model = program.train()
         print(model)
     if args['test']:
