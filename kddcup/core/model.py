@@ -71,6 +71,14 @@ class Model(object):
         self.loss, self.accuracy = self.kmodel.evaluate(data.X, data.Y)
         return self
 
+    def save(self, file):
+        self.kmodel.save(file)
+        return self
+
+    def load(self, file):
+        self.kmodel = load_model(file)
+        return self
+
 
 class KddCupModel(object):
     def __init__(self, inputs=[], targets=[], layers=[{'neurons': 1, 'activation': 'relu'}],
