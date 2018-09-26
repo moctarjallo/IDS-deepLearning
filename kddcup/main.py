@@ -1,17 +1,17 @@
 """kddcup program
 
 Usage:
-    kddcup train [--file=<filepath> --nrows=<int> --batch=<int> --batch_train=<int> --epochs=<int> --verbose=<int>] 
-    kddcup test [--model=<modelpaht> --file=<filepath> --nrows=<int> --batch=<int>  --verbose=<int>]
-    kddcup plot
+    kddcup train [--file=<filepath> --nrows=<int> --batch=<int> --batch_train=<int> --epochs=<int> --verbose=<int> --save_path=<filepath>] 
+    kddcup test [--model=<modelpath> --file=<filepath> --nrows=<int> --batch=<int>  --verbose=<int>]
     kddcup predict [--packet=<csvfile>]
+    kddcup plot
     kddcup -h | --help
 
 Options:
     --file=<filepath>         data file to be trained/tested on
     --nrows=<int>             number of rows to read from FILE [default: 10000]
     --batch=<int>             iteration size over data being read from FILE [default: 10000]
-    --trainbatch=<int>        training batch [default: 128]
+    --batch_train=<int>       training batch [default: 128]
     --epochs=<int>            epochs [default: 5]
     --verbose=<int>           show the training [default: 1]
     --model=<modelpath>       path to a saved model
@@ -48,18 +48,17 @@ class KddCup(object):
         train_data = KddCupData(filename=os.path.join(self.home, self.config["train"]["file"]),
                                 nrows=self.config["train"]["rows"],
                                 batch=self.config["train"]["batch_iter"])
-        test_data = KddCupData(filename=os.path.join(self.home, self.config["test"]["file"]),
-                               nrows=self.config["test"]["rows"],
-                               batch=self.config["test"]["batch_iter"])
         model = KddCupModel(inputs=self.config["inputs"],
                             targets=self.config["targets"],
                             layers=self.config["layers"])
-        return model.train(data=train_data,
-                           batch_size=self.config["train"]["batch_train"],
-                           epochs=self.config["train"]["epochs"],
-                           verbose=self.config["train"]["verbose"])\
-            .test(data=test_data)\
-            .save(path=os.path.join(self.home, self.config["train"]["save_model"]))['model_path']
+        model = model.train(data=train_data,
+                            batch_size=self.config["train"]["batch_train"],
+                            epochs=self.config["train"]["epochs"],
+                            verbose=self.config["train"]["verbose"])
+        if self.config["train"]["save_model"]:
+            model.save(path=os.path.join(
+                self.home, self.config["train"]["save_model"]))
+        return model['model_path']
 
     def test(self):
         data = KddCupData(filename=os.path.join(self.home, self.config["test"]["file"]),
@@ -115,9 +114,22 @@ def cli():
             program.config["train"]["epochs"] = int(args['--epochs'])
         if args['--verbose']:
             program.config["train"]["verbose"] = int(args['--verbose'])
+        if args['--save_path']:
+            program.config["train"]["save_model"] = args['--save_path']
         model = program.train()
         print(model)
     if args['test']:
+        print(args)
+        if args['--model']:
+            program.config["test"]["model_path"] = args['--model']
+        if args['--file']:
+            program.config["test"]["file"] = args['file']
+        if args['--nrows']:
+            program.config["test"]["rows"] = int(args['--nrows'])
+        if args['--batch']:
+            program.config["test"]["batch_iter"] = int(args['--batch'])
+        if args['--verbose']:
+            program.config["test"]["verbose"] = int(args['--verbose'])
         loss, acc = program.test()
         print(loss, acc)
     if args['plot']:
